@@ -1,0 +1,1080 @@
+<!doctype html>
+<html lang="fr" data-bs-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Management System</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+
+    <style>
+      [x-cloak] {
+        display: none !important;
+      }
+
+      /* Better transitions */
+      * {
+        transition:
+          background-color 0.3s ease,
+          border-color 0.3s ease,
+          color 0.3s ease;
+      }
+
+      /* Navbar styling */
+      .navbar {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      [data-bs-theme="dark"] .navbar {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      /* Card styling */
+      .card {
+        border-radius: 0.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+      }
+
+      [data-bs-theme="dark"] .card {
+        box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.3);
+      }
+
+      /* Login card special styling */
+      .login-card {
+        border-radius: 1rem;
+        border: none;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+      }
+
+      [data-bs-theme="dark"] .login-card {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.5);
+      }
+
+      /* Table hover effect */
+      .table tbody tr {
+        cursor: pointer;
+      }
+
+      /* Button group styling */
+      .action-buttons .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+      }
+
+      /* Modal improvements */
+      .modal-content {
+        border-radius: 0.5rem;
+        border: none;
+      }
+
+      /* Form focus improvements */
+      .form-control:focus,
+      .form-select:focus {
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+      }
+
+      [data-bs-theme="dark"] .form-control:focus,
+      [data-bs-theme="dark"] .form-select:focus {
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.5);
+      }
+
+      /* Badge styling */
+      .user-count-badge {
+        font-size: 0.875rem;
+        padding: 0.35rem 0.65rem;
+      }
+
+      /* Empty state styling */
+      .empty-state {
+        padding: 3rem 1rem;
+        text-align: center;
+      }
+
+      .empty-state i {
+        font-size: 4rem;
+        opacity: 0.5;
+      }
+
+      /* Search box styling */
+      .search-box {
+        position: relative;
+        max-width: 400px;
+      }
+
+      .search-box .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        pointer-events: none;
+      }
+
+      .search-box .form-control {
+        padding-left: 38px;
+        padding-right: 38px;
+      }
+
+      .search-box .clear-search {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: none;
+        background: transparent;
+        color: #6c757d;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+      }
+
+      .search-box .clear-search:hover {
+        background: rgba(108, 117, 125, 0.1);
+        color: #495057;
+      }
+
+      [data-bs-theme="dark"] .search-box .clear-search:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #e0e0e0;
+      }
+
+      /* Highlight matched text */
+      .highlight {
+        background-color: #fff3cd;
+        padding: 2px 4px;
+        border-radius: 2px;
+        font-weight: 600;
+      }
+
+      [data-bs-theme="dark"] .highlight {
+        background-color: #664d03;
+        color: #fff3cd;
+      }
+
+      /* Search toolbar */
+      .search-toolbar {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        padding: 1rem 1.5rem;
+      }
+
+      [data-bs-theme="dark"] .search-toolbar {
+        background-color: #212529;
+        border-bottom-color: #495057;
+      }
+    </style>
+  </head>
+  <body>
+    <div x-data="appData()" x-init="init()" x-cloak>
+      <!-- Navbar -->
+      <nav class="navbar navbar-expand-lg bg-primary navbar-dark sticky-top">
+        <div class="container-fluid">
+          <span class="navbar-brand mb-0 h1">
+            <!-- <i class="bi bi-people-fill me-2"></i> -->
+            <img
+              src="https://elhillal.com/wp-content/uploads/2025/12/El-Hillal-Black-Color.png"
+              alt="El Hilal Logo"
+              style="height: 30px; margin-right: 8px"
+            />
+            <span x-text="t('appTitle')"></span>
+          </span>
+
+          <div class="d-flex align-items-center gap-2">
+            <!-- User count badge -->
+            <span
+              x-show="isAuthenticated"
+              class="badge bg-light text-primary user-count-badge"
+            >
+              <i class="bi bi-person-check"></i>
+              <span x-text="filteredUsers.length + '/' + users.length"></span>
+            </span>
+
+            <!-- Language Toggle -->
+            <button
+              @click="toggleLanguage()"
+              class="btn btn-outline-light"
+              title="Change Language"
+            >
+              <i class="bi bi-translate"></i>
+              <span x-text="currentLang === 'fr' ? 'AR' : 'FR'"></span>
+            </button>
+
+            <!-- Dark Mode Toggle -->
+            <button
+              @click="toggleDarkMode()"
+              class="btn btn-outline-light"
+              :title="darkMode ? 'Light Mode' : 'Dark Mode'"
+            >
+              <i :class="darkMode ? 'bi-sun-fill' : 'bi-moon-fill'"></i>
+            </button>
+
+            <!-- Logout Button -->
+            <button
+              x-show="isAuthenticated"
+              @click="logout()"
+              class="btn btn-danger"
+            >
+              <i class="bi bi-box-arrow-right"></i>
+              <span class="d-none d-md-inline ms-1" x-text="t('logout')"></span>
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Login Form -->
+      <div x-show="!isAuthenticated" class="container mt-5">
+        <div class="row justify-content-center">
+          <div class="col-md-5 col-lg-4">
+            <div class="card login-card">
+              <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4">
+                  <div class="mb-3">
+                    <i
+                      class="bi bi-shield-lock text-primary"
+                      style="font-size: 3rem"
+                    ></i>
+                  </div>
+                  <h3 class="fw-bold" x-text="t('login')"></h3>
+                  <p class="text-muted mb-0" x-text="t('loginSubtitle')"></p>
+                </div>
+
+                <div
+                  x-show="loginError"
+                  class="alert alert-danger alert-dismissible fade show"
+                  role="alert"
+                >
+                  <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                  <span x-text="loginError"></span>
+                </div>
+
+                <form @submit.prevent="login()">
+                  <div class="mb-3">
+                    <label
+                      class="form-label fw-semibold"
+                      x-text="t('email')"
+                    ></label>
+                    <div class="input-group">
+                      <span class="input-group-text">
+                        <i class="bi bi-envelope"></i>
+                      </span>
+                      <input
+                        type="email"
+                        class="form-control"
+                        x-model="loginForm.email"
+                        placeholder="exemple@email.com"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div class="mb-4">
+                    <label
+                      class="form-label fw-semibold"
+                      x-text="t('password')"
+                    ></label>
+                    <div class="input-group">
+                      <span class="input-group-text">
+                        <i class="bi bi-lock"></i>
+                      </span>
+                      <input
+                        type="password"
+                        class="form-control"
+                        x-model="loginForm.password"
+                        maxlength="4"
+                        pattern="[0-9]{4}"
+                        required
+                        :placeholder="t('passwordPlaceholder')"
+                      />
+                    </div>
+                    <div class="form-text">
+                      <i class="bi bi-info-circle me-1"></i>
+                      <span x-text="t('passwordHelp')"></span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    class="btn btn-primary w-100 py-2 fw-semibold"
+                  >
+                    <i class="bi bi-box-arrow-in-right me-2"></i>
+                    <span x-text="t('login')"></span>
+                  </button>
+                </form>
+
+                <div class="mt-4 text-center">
+                  <small
+                    class="text-muted"
+                    x-text="t('demoCredentials')"
+                  ></small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Management Dashboard -->
+      <div x-show="isAuthenticated" class="container mt-4 mb-5">
+        <div class="card">
+          <div class="card-header bg-primary text-white py-3">
+            <div class="row align-items-center">
+              <div class="col">
+                <h4 class="mb-0">
+                  <i class="bi bi-people me-2"></i>
+                  <span x-text="t('userManagement')"></span>
+                </h4>
+              </div>
+              <div class="col-auto">
+                <button @click="openModal('add')" class="btn btn-light">
+                  <i class="bi bi-plus-circle me-1"></i>
+                  <span x-text="t('addUser')"></span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Search Toolbar -->
+          <div x-show="users.length > 0" class="search-toolbar">
+            <div class="row align-items-center g-3">
+              <div class="col-md-8 col-lg-6">
+                <div class="search-box">
+                  <i class="bi bi-search search-icon"></i>
+                  <input
+                    type="text"
+                    class="form-control"
+                    x-model="searchQuery"
+                    @input="performSearch()"
+                    :placeholder="t('searchPlaceholder')"
+                    aria-label="Search users"
+                  />
+                  <button
+                    x-show="searchQuery.length > 0"
+                    @click="clearSearch()"
+                    class="clear-search"
+                    :title="t('clearSearch')"
+                  >
+                    <i class="bi bi-x-circle-fill"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="col-md-4 col-lg-6 text-md-end">
+                <span class="badge bg-primary" x-show="searchQuery.length > 0">
+                  <i class="bi bi-funnel-fill me-1"></i>
+                  <span
+                    x-text="filteredUsers.length + ' ' + t('results')"
+                  ></span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-body p-0">
+            <!-- Empty State -->
+            <div x-show="users.length === 0" class="empty-state">
+              <i class="bi bi-inbox text-muted"></i>
+              <h5 class="mt-3 text-muted" x-text="t('noUsers')"></h5>
+              <p class="text-muted" x-text="t('noUsersSubtitle')"></p>
+              <button @click="openModal('add')" class="btn btn-primary mt-2">
+                <i class="bi bi-plus-circle me-1"></i>
+                <span x-text="t('addFirstUser')"></span>
+              </button>
+            </div>
+
+            <!-- No Search Results -->
+            <div
+              x-show="users.length > 0 && filteredUsers.length === 0"
+              class="empty-state"
+            >
+              <i class="bi bi-search text-muted"></i>
+              <h5 class="mt-3 text-muted" x-text="t('noResults')"></h5>
+              <p class="text-muted" x-text="t('noResultsSubtitle')"></p>
+              <button
+                @click="clearSearch()"
+                class="btn btn-outline-primary mt-2"
+              >
+                <i class="bi bi-x-circle me-1"></i>
+                <span x-text="t('clearSearch')"></span>
+              </button>
+            </div>
+
+            <!-- Users Table -->
+            <div x-show="filteredUsers.length > 0" class="table-responsive">
+              <table class="table table-hover table-striped mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th class="ps-4">
+                      <i class="bi bi-envelope me-1"></i>
+                      <span x-text="t('email')"></span>
+                    </th>
+                    <th>
+                      <i class="bi bi-person me-1"></i>
+                      <span x-text="t('firstName')"></span>
+                    </th>
+                    <th>
+                      <i class="bi bi-person-badge me-1"></i>
+                      <span x-text="t('lastName')"></span>
+                    </th>
+                    <th>
+                      <i class="bi bi-telephone me-1"></i>
+                      <span x-text="t('phone')"></span>
+                    </th>
+                    <th class="text-center pe-4" x-text="t('actions')"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="user in filteredUsers" :key="user.id">
+                    <tr>
+                      <td class="ps-4">
+                        <strong x-html="highlightText(user.email)"></strong>
+                      </td>
+                      <td x-html="highlightText(user.firstName)"></td>
+                      <td x-html="highlightText(user.lastName)"></td>
+                      <td x-html="highlightText(user.phone)"></td>
+                      <td class="text-center pe-4">
+                        <div class="action-buttons btn-group" role="group">
+                          <button
+                            @click="viewUser(user)"
+                            class="btn btn-info btn-sm"
+                            :title="t('view')"
+                          >
+                            <i class="bi bi-eye-fill"></i>
+                          </button>
+                          <button
+                            @click="openModal('edit', user)"
+                            class="btn btn-warning btn-sm"
+                            :title="t('edit')"
+                          >
+                            <i class="bi bi-pencil-fill"></i>
+                          </button>
+                          <button
+                            @click="deleteUser(user.id)"
+                            class="btn btn-danger btn-sm"
+                            :title="t('delete')"
+                          >
+                            <i class="bi bi-trash-fill"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Card Footer with Stats -->
+          <div x-show="users.length > 0" class="card-footer bg-light">
+            <div class="row text-center">
+              <div class="col">
+                <small class="text-muted">
+                  <i class="bi bi-people-fill me-1"></i>
+                  <strong x-text="filteredUsers.length"></strong>
+                  <span
+                    x-text="searchQuery.length > 0 ? t('of') + ' ' + users.length + ' ' + t('totalUsers') : t('totalUsers')"
+                  ></span>
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add/Edit User Modal -->
+      <div
+        class="modal fade"
+        :class="{'show d-block': showModal}"
+        tabindex="-1"
+        style="background-color: rgba(0, 0, 0, 0.5)"
+        x-show="showModal"
+        @click.self="closeModal()"
+      >
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title">
+                <i
+                  :class="modalMode === 'add' ? 'bi-plus-circle' : 'bi-pencil-square'"
+                  class="me-2"
+                ></i>
+                <span
+                  x-text="modalMode === 'add' ? t('addUser') : t('editUser')"
+                ></span>
+              </h5>
+              <button
+                type="button"
+                class="btn-close btn-close-white"
+                @click="closeModal()"
+              ></button>
+            </div>
+
+            <form @submit.prevent="saveUser()">
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-envelope me-1"></i>
+                    <span x-text="t('email')"></span>
+                  </label>
+                  <input
+                    type="email"
+                    class="form-control"
+                    x-model="userForm.email"
+                    placeholder="exemple@email.com"
+                    required
+                  />
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label fw-semibold">
+                      <i class="bi bi-person me-1"></i>
+                      <span x-text="t('firstName')"></span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      x-model="userForm.firstName"
+                      required
+                    />
+                  </div>
+
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label fw-semibold">
+                      <i class="bi bi-person-badge me-1"></i>
+                      <span x-text="t('lastName')"></span>
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      x-model="userForm.lastName"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-telephone me-1"></i>
+                    <span x-text="t('phone')"></span>
+                  </label>
+                  <input
+                    type="tel"
+                    class="form-control"
+                    x-model="userForm.phone"
+                    placeholder="0555123456"
+                    required
+                  />
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">
+                    <i class="bi bi-lock me-1"></i>
+                    <span x-text="t('password')"></span>
+                  </label>
+                  <input
+                    type="password"
+                    class="form-control"
+                    x-model="userForm.password"
+                    maxlength="4"
+                    pattern="[0-9]{4}"
+                    :required="modalMode === 'add'"
+                    :placeholder="t('passwordPlaceholder')"
+                  />
+                  <div class="form-text" x-show="modalMode === 'edit'">
+                    <i class="bi bi-info-circle me-1"></i>
+                    <span x-text="t('passwordHint')"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  @click="closeModal()"
+                >
+                  <i class="bi bi-x-circle me-1"></i>
+                  <span x-text="t('cancel')"></span>
+                </button>
+                <button type="submit" class="btn btn-primary">
+                  <i class="bi bi-check-circle me-1"></i>
+                  <span x-text="t('save')"></span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- View User Modal -->
+      <div
+        class="modal fade"
+        :class="{'show d-block': showViewModal}"
+        tabindex="-1"
+        style="background-color: rgba(0, 0, 0, 0.5)"
+        x-show="showViewModal"
+        @click.self="showViewModal = false"
+      >
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+              <h5 class="modal-title">
+                <i class="bi bi-person-circle me-2"></i>
+                <span x-text="t('userDetails')"></span>
+              </h5>
+              <button
+                type="button"
+                class="btn-close btn-close-white"
+                @click="showViewModal = false"
+              ></button>
+            </div>
+
+            <div class="modal-body p-4" x-show="viewUserData">
+              <div class="text-center mb-4">
+                <div
+                  class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center"
+                  style="width: 80px; height: 80px"
+                >
+                  <i
+                    class="bi bi-person-fill text-primary"
+                    style="font-size: 2.5rem"
+                  ></i>
+                </div>
+                <h5
+                  class="mt-3 mb-1"
+                  x-text="viewUserData?.firstName + ' ' + viewUserData?.lastName"
+                ></h5>
+                <p class="text-muted mb-0" x-text="viewUserData?.email"></p>
+              </div>
+
+              <div class="list-group list-group-flush">
+                <div class="list-group-item d-flex align-items-center">
+                  <div class="me-3 text-primary">
+                    <i
+                      class="bi bi-envelope-fill"
+                      style="font-size: 1.5rem"
+                    ></i>
+                  </div>
+                  <div class="flex-grow-1">
+                    <small
+                      class="text-muted d-block"
+                      x-text="t('email')"
+                    ></small>
+                    <strong x-text="viewUserData?.email"></strong>
+                  </div>
+                </div>
+
+                <div class="list-group-item d-flex align-items-center">
+                  <div class="me-3 text-success">
+                    <i class="bi bi-person-fill" style="font-size: 1.5rem"></i>
+                  </div>
+                  <div class="flex-grow-1">
+                    <small
+                      class="text-muted d-block"
+                      x-text="t('firstName')"
+                    ></small>
+                    <strong x-text="viewUserData?.firstName"></strong>
+                  </div>
+                </div>
+
+                <div class="list-group-item d-flex align-items-center">
+                  <div class="me-3 text-warning">
+                    <i
+                      class="bi bi-person-badge-fill"
+                      style="font-size: 1.5rem"
+                    ></i>
+                  </div>
+                  <div class="flex-grow-1">
+                    <small
+                      class="text-muted d-block"
+                      x-text="t('lastName')"
+                    ></small>
+                    <strong x-text="viewUserData?.lastName"></strong>
+                  </div>
+                </div>
+
+                <div class="list-group-item d-flex align-items-center">
+                  <div class="me-3 text-info">
+                    <i
+                      class="bi bi-telephone-fill"
+                      style="font-size: 1.5rem"
+                    ></i>
+                  </div>
+                  <div class="flex-grow-1">
+                    <small
+                      class="text-muted d-block"
+                      x-text="t('phone')"
+                    ></small>
+                    <strong x-text="viewUserData?.phone"></strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                @click="showViewModal = false"
+              >
+                <i class="bi bi-x-circle me-1"></i>
+                <span x-text="t('close')"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alpine.js -->
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"
+    ></script>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      function appData() {
+        return {
+          // Authentication
+          isAuthenticated: false,
+          jwtToken: null,
+          loginError: "",
+          loginForm: {
+            email: "",
+            password: "",
+          },
+
+          // Users data (dummy array)
+          users: [
+            {
+              id: 1,
+              email: "admin@example.com",
+              firstName: "Sadek",
+              lastName: "BENAISSA",
+              phone: "0799840243",
+              password: "1234",
+            },
+            {
+              id: 2,
+              email: "user@example.com",
+              firstName: "Abdelhalim",
+              lastName: "Keddar",
+              phone: "0770064129",
+              password: "0000",
+            },
+            {
+              id: 3,
+              email: "test@example.com",
+              firstName: "Amar",
+              lastName: "Charrak",
+              phone: "0550123456",
+              password: "9999",
+            },
+          ],
+
+          // Search functionality
+          searchQuery: "",
+          filteredUsers: [],
+
+          // Modal state
+          showModal: false,
+          showViewModal: false,
+          modalMode: "add",
+          userForm: {
+            id: null,
+            email: "",
+            firstName: "",
+            lastName: "",
+            phone: "",
+            password: "",
+          },
+          viewUserData: null,
+
+          // Theme and language
+          darkMode: false,
+          currentLang: "fr",
+
+          // Translations
+          translations: {
+            fr: {
+              appTitle: "Gestion des Utilisateurs",
+              login: "Connexion",
+              loginSubtitle: "Entrez vos identifiants pour continuer",
+              logout: "Déconnexion",
+              email: "Email",
+              password: "Mot de passe",
+              passwordPlaceholder: "4 chiffres",
+              passwordHelp: "Utilisez un code PIN à 4 chiffres",
+              passwordHint: "Laissez vide pour ne pas changer",
+              firstName: "Prénom",
+              lastName: "Nom",
+              phone: "Téléphone",
+              userManagement: "Gestion des Utilisateurs",
+              addUser: "Ajouter",
+              addFirstUser: "Ajouter le premier utilisateur",
+              editUser: "Modifier",
+              userDetails: "Détails",
+              actions: "Actions",
+              view: "Voir",
+              edit: "Modifier",
+              delete: "Supprimer",
+              save: "Enregistrer",
+              cancel: "Annuler",
+              close: "Fermer",
+              noUsers: "Aucun utilisateur",
+              noUsersSubtitle:
+                "Commencez par ajouter votre premier utilisateur",
+              totalUsers: "utilisateurs au total",
+              loginError: "Email ou mot de passe incorrect",
+              deleteConfirm:
+                "Êtes-vous sûr de vouloir supprimer cet utilisateur ?",
+              demoCredentials: "Utilisez: admin@example.com / 1234",
+              searchPlaceholder: "Rechercher par nom, email ou téléphone...",
+              clearSearch: "Effacer la recherche",
+              results: "résultats",
+              of: "sur",
+              noResults: "Aucun résultat trouvé",
+              noResultsSubtitle: "Essayez de modifier votre recherche",
+            },
+            ar: {
+              appTitle: "إدارة المستخدمين",
+              login: "تسجيل الدخول",
+              loginSubtitle: "أدخل بيانات الاعتماد للمتابعة",
+              logout: "خروج",
+              email: "البريد الإلكتروني",
+              password: "كلمة المرور",
+              passwordPlaceholder: "4 أرقام",
+              passwordHelp: "استخدم رمز PIN من 4 أرقام",
+              passwordHint: "اتركه فارغًا لعدم التغيير",
+              firstName: "الاسم",
+              lastName: "اللقب",
+              phone: "الهاتف",
+              userManagement: "إدارة المستخدمين",
+              addUser: "إضافة",
+              addFirstUser: "إضافة أول مستخدم",
+              editUser: "تعديل",
+              userDetails: "التفاصيل",
+              actions: "الإجراءات",
+              view: "عرض",
+              edit: "تعديل",
+              delete: "حذف",
+              save: "حفظ",
+              cancel: "إلغاء",
+              close: "إغلاق",
+              noUsers: "لا يوجد مستخدمون",
+              noUsersSubtitle: "ابدأ بإضافة أول مستخدم",
+              totalUsers: "مستخدم في المجموع",
+              loginError: "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+              deleteConfirm: "هل أنت متأكد من حذف هذا المستخدم؟",
+              demoCredentials: "استخدم: admin@example.com / 1234",
+              searchPlaceholder: "البحث بالاسم أو البريد أو الهاتف...",
+              clearSearch: "مسح البحث",
+              results: "نتيجة",
+              of: "من",
+              noResults: "لم يتم العثور على نتائج",
+              noResultsSubtitle: "حاول تعديل بحثك",
+            },
+          },
+
+          // Initialize
+          init() {
+            this.darkMode = localStorage.getItem("darkMode") === "true";
+            this.currentLang = localStorage.getItem("lang") || "fr";
+            this.jwtToken = localStorage.getItem("jwtToken");
+
+            if (this.jwtToken) {
+              this.isAuthenticated = this.validateToken(this.jwtToken);
+            }
+
+            // Initialize filtered users
+            this.filteredUsers = [...this.users];
+
+            this.applyDarkMode();
+            this.applyLanguage();
+          },
+
+          t(key) {
+            return this.translations[this.currentLang][key] || key;
+          },
+
+          toggleLanguage() {
+            this.currentLang = this.currentLang === "fr" ? "ar" : "fr";
+            localStorage.setItem("lang", this.currentLang);
+            this.applyLanguage();
+          },
+
+          applyLanguage() {
+            document.documentElement.lang = this.currentLang;
+            document.documentElement.dir =
+              this.currentLang === "ar" ? "rtl" : "ltr";
+          },
+
+          toggleDarkMode() {
+            this.darkMode = !this.darkMode;
+            localStorage.setItem("darkMode", this.darkMode);
+            this.applyDarkMode();
+          },
+
+          applyDarkMode() {
+            document.documentElement.setAttribute(
+              "data-bs-theme",
+              this.darkMode ? "dark" : "light",
+            );
+          },
+
+          // Search functionality
+          performSearch() {
+            const query = this.searchQuery.toLowerCase().trim();
+
+            if (query === "") {
+              this.filteredUsers = [...this.users];
+              return;
+            }
+
+            this.filteredUsers = this.users.filter((user) => {
+              return (
+                user.email.toLowerCase().includes(query) ||
+                user.firstName.toLowerCase().includes(query) ||
+                user.lastName.toLowerCase().includes(query) ||
+                user.phone.toLowerCase().includes(query)
+              );
+            });
+          },
+
+          clearSearch() {
+            this.searchQuery = "";
+            this.performSearch();
+          },
+
+          highlightText(text) {
+            if (!this.searchQuery || !text) return text;
+
+            const query = this.searchQuery.trim();
+            if (query === "") return text;
+
+            const regex = new RegExp(`(${query})`, "gi");
+            return text.replace(regex, '<span class="highlight">$1</span>');
+          },
+
+          generateToken(user) {
+            const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+            const payload = btoa(
+              JSON.stringify({
+                sub: user.id,
+                email: user.email,
+                exp: Date.now() + 24 * 60 * 60 * 1000,
+              }),
+            );
+            const signature = btoa("secret-signature-" + user.id);
+            return `${header}.${payload}.${signature}`;
+          },
+
+          validateToken(token) {
+            try {
+              const parts = token.split(".");
+              if (parts.length !== 3) return false;
+              const payload = JSON.parse(atob(parts[1]));
+              return payload.exp > Date.now();
+            } catch (e) {
+              return false;
+            }
+          },
+
+          login() {
+            const user = this.users.find(
+              (u) =>
+                u.email === this.loginForm.email &&
+                u.password === this.loginForm.password,
+            );
+
+            if (user) {
+              this.jwtToken = this.generateToken(user);
+              localStorage.setItem("jwtToken", this.jwtToken);
+              this.isAuthenticated = true;
+              this.loginError = "";
+              this.loginForm = { email: "", password: "" };
+              this.filteredUsers = [...this.users];
+            } else {
+              this.loginError = this.t("loginError");
+            }
+          },
+
+          logout() {
+            this.isAuthenticated = false;
+            this.jwtToken = null;
+            localStorage.removeItem("jwtToken");
+            this.clearSearch();
+          },
+
+          openModal(mode, user = null) {
+            this.modalMode = mode;
+
+            if (mode === "edit" && user) {
+              this.userForm = { ...user, password: "" };
+            } else {
+              this.userForm = {
+                id: null,
+                email: "",
+                firstName: "",
+                lastName: "",
+                phone: "",
+                password: "",
+              };
+            }
+
+            this.showModal = true;
+          },
+
+          closeModal() {
+            this.showModal = false;
+          },
+
+          saveUser() {
+            if (this.modalMode === "add") {
+              const newUser = {
+                ...this.userForm,
+                id: Math.max(...this.users.map((u) => u.id), 0) + 1,
+              };
+              this.users.push(newUser);
+            } else {
+              const index = this.users.findIndex(
+                (u) => u.id === this.userForm.id,
+              );
+              if (index !== -1) {
+                if (!this.userForm.password) {
+                  this.userForm.password = this.users[index].password;
+                }
+                this.users[index] = { ...this.userForm };
+              }
+            }
+
+            this.performSearch(); // Update filtered results
+            this.closeModal();
+          },
+
+          viewUser(user) {
+            this.viewUserData = { ...user };
+            this.showViewModal = true;
+          },
+
+          deleteUser(id) {
+            if (confirm(this.t("deleteConfirm"))) {
+              this.users = this.users.filter((u) => u.id !== id);
+              this.performSearch(); // Update filtered results
+            }
+          },
+        };
+      }
+    </script>
+  </body>
+</html>
